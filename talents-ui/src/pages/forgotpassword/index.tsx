@@ -1,18 +1,17 @@
 import React, { Component } from "react";
 import { Form, Input, Button, message, Alert } from "antd";
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
+import { MailOutlined } from "@ant-design/icons";
 import "./style.css";
 import { Link } from "react-router-dom";
-import { ILoginModel } from "../../models/account/ILoginModel";
 import { IAlertModel } from "../../models/IAlertModel";
 import AccountService from "../../services/account-service";
-import { LOCALSTORAGE } from "../../models/constants";
+import { ITokenModel } from "../../models/account/ITokenModel";
 
 interface IState {
     isLoading: boolean,
     alert: IAlertModel
 }
-export default class Login extends Component<{}, IState> {
+export default class ForgotPassword extends Component<{}, IState> {
     state = {
         isLoading: false,
         alert: {
@@ -23,18 +22,16 @@ export default class Login extends Component<{}, IState> {
     }
 
     _onFinish = async (values: any) => {
-        const data: ILoginModel = {
+        const data: ITokenModel = {
             email: values.email,
-            password: values.password
+            token: ''
         }
         this._toggleLoading(true);
         try {
-            const result = await AccountService.login(data);
+            const result = await AccountService.requestResetPassword(data);
             if (result.isSuccess) {
-                message.success("Redirecting you to dashboard.");
-                this.setState({ alert: { show: true, message: `Login successful. Redirecting you to dashboard.`, isSuccess: true } });
-                localStorage.setItem(LOCALSTORAGE.TOKEN, result.message);
-                window.location.href = '/dashboard';
+                message.success("Success");
+                this.setState({ alert: { show: true, message: `A reset password link was sent to ${data.email}.`, isSuccess: true } });
             }
             else {
                 message.error(result.message);
@@ -53,10 +50,9 @@ export default class Login extends Component<{}, IState> {
             <>
                 <fieldset disabled={this.state.isLoading}>
                     <div style={{ marginTop: '10vh' }}>
-                        <h1 className="text-center">Sign in</h1>
+                        <h1 className="text-center">Forgot Password</h1>
                         <Form
-                            name="normal_login"
-                            className="login-form"
+                            className="forgotpassword-form"
                             onFinish={this._onFinish}>
                             {this.state.alert.show && <Alert type={this.state.alert.isSuccess ? 'success' : 'error'} message={this.state.alert.message} />}
                             <p></p>
@@ -70,29 +66,16 @@ export default class Login extends Component<{}, IState> {
                                 ]}>
                                 <Input type="email" prefix={<MailOutlined className="site-form-item-icon" />} placeholder="Email" />
                             </Form.Item>
-                            <Form.Item
-                                name="password"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: 'Please input your Password!',
-                                    },
-                                ]}>
-                                <Input.Password
-                                    prefix={<LockOutlined className="site-form-item-icon" />}
-                                    placeholder="Password"
-                                />
-                            </Form.Item>
                             <Form.Item>
-                                <Link to="/forgotpassword" className="login-form-forgot">Forgot password</Link>
-                            </Form.Item>
-
-                            <Form.Item>
-                                <Button loading={this.state.isLoading} type="primary" htmlType="submit" className="login-form-button">Log in</Button>
+                                <Button loading={this.state.isLoading} type="primary" htmlType="submit" className="forgotpassword-form-button">Submit</Button>
                             </Form.Item>
 
                             <div className="text-center">
                                 <Link to="/register">Register a new account</Link>
+                            </div>
+                            <p></p>
+                            <div className="text-center">
+                                <Link to="/login">Login</Link>
                             </div>
                         </Form>
                     </div>
