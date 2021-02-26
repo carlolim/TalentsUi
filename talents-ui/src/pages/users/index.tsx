@@ -1,23 +1,23 @@
 import React, { Component } from "react";
 import moment from "moment";
-import { Button, Dropdown, Menu, message, Modal, Space, Spin, Table } from "antd";
+import { Button, Dropdown, Menu, message, Modal, Space, Spin, Table, Tag } from "antd";
 import { DeleteFilled, DownOutlined, EditFilled, PlusOutlined } from "@ant-design/icons";
 import "./style.css";
 import { DATETIME_FORMAT } from "../../models/constants";
-import { IUserRoleModel } from "../../models/user-role/IUserRoleModel";
 import Search from "antd/lib/input/Search";
-import EditRoleModal from "./edit-role-modal";
-import CreateRoleModal from "./create-role-modal";
-import UserRoleService from "../../services/user-role-service";
+import EditUserModal from "./edit-user-modal";
+import CreateUserModal from "./create-user-modal";
+import { IUserModel } from "../../models/user/IUserModel";
+import UserService from "../../services/user-service";
 
 interface IState {
     isLoading: boolean,
-    data: Array<IUserRoleModel>,
+    data: Array<IUserModel>,
     showAdd: boolean,
     showEdit: boolean,
     selectedId: number
 }
-export default class Roles extends Component<{}, IState> {
+export default class Users extends Component<{}, IState> {
     state = {
         isLoading: false,
         data: [],
@@ -31,7 +31,7 @@ export default class Roles extends Component<{}, IState> {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: (text: string, row: IUserRoleModel) => <Button type="link" onClick={() => this._toggleEditRole(true, row.id)}>{text}</Button>,
+            render: (text: string, row: IUserModel) => <Button type="link" onClick={() => this._toggleEdit(true, row.id)}>{row.firstName} {row.lastName}</Button>,
         },
         {
             title: 'Date created',
@@ -40,16 +40,28 @@ export default class Roles extends Component<{}, IState> {
             render: (text: Date) => moment(text).format(DATETIME_FORMAT),
         },
         {
+            title: 'Roles',
+            dataIndex: 'roles',
+            key: 'roles',
+            render: (text: Array<string>) => text.map(t => <Tag color="blue" key={t} title={t} />),
+        },
+        {
+            title: 'Email verified',
+            dataIndex: 'isEmailVerified',
+            key: 'isEmailVerified',
+            render: (text: boolean) => text ? <Tag color="green" title="Yes" /> : <Tag color="red" title="No" />,
+        },
+        {
             title: 'Action',
             key: '',
             dataIndex: '',
-            render: (data: any, row: IUserRoleModel) =>
+            render: (data: any, row: IUserModel) =>
                 <Dropdown
                     overlay={
                         <>
                             <Menu>
                                 <Menu.Item key="0">
-                                    <Button onClick={() => this._toggleEditRole(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
+                                    <Button onClick={() => this._toggleEdit(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
                                 </Menu.Item>
                                 <Menu.Item key="1">
                                     <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
@@ -70,20 +82,20 @@ export default class Roles extends Component<{}, IState> {
 
     _loadData = async (search?: string) => {
         this.setState({ isLoading: true });
-        const data = await UserRoleService.getAll(search);
+        const data = await UserService.getAll(search);
         this.setState({ data, isLoading: false });
     }
 
-    _toggleEditRole = async (showEdit: boolean, selectedId: number) => this.setState({ showEdit, selectedId })
-    _toggleAddRole = async (showAdd: boolean) => this.setState({ showAdd })
+    _toggleEdit = async (showEdit: boolean, selectedId: number) => this.setState({ showEdit, selectedId })
+    _toggleAdd = async (showAdd: boolean) => this.setState({ showAdd })
     _onSearch = async (str: string) => await this._loadData(str);
 
     _onCretionSuccess = async () => {
-        this._toggleAddRole(false);
+        this._toggleAdd(false);
         await this._loadData();
     }
     _onEditSuccess = async () => {
-        this._toggleEditRole(false, 0);
+        this._toggleEdit(false, 0);
         await this._loadData();
     }
 
@@ -93,7 +105,7 @@ export default class Roles extends Component<{}, IState> {
             content: this.state.isLoading ? <div className="text-center"><Spin /></div> : <></>,
             onOk: async () => {
                 this.state.isLoading = true;
-                const result = await UserRoleService.delete(id);
+                const result = await UserService.delete(id);
                 if (result.isSuccess) await this._loadData();
                 else message.error(result.message);
                 this.state.isLoading = false;
@@ -107,11 +119,11 @@ export default class Roles extends Component<{}, IState> {
     render() {
         return (
             <>
-                <h3>Roles and Permissions</h3>
+                <h3>Users</h3>
 
-                <Search placeholder="Role name" onSearch={this._onSearch} enterButton allowClear />
+                <Search placeholder="Name, Email" onSearch={this._onSearch} enterButton allowClear />
                 <div style={{ height: 25 }}></div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => this._toggleAddRole(true)}>Add new</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => this._toggleAdd(true)}>Add new</Button>
                 <p></p>
                 <Table
                     loading={this.state.isLoading}
@@ -120,17 +132,17 @@ export default class Roles extends Component<{}, IState> {
                     dataSource={this.state.data} />
 
                 {this.state.showAdd &&
-                    <CreateRoleModal
-                        onClose={() => this._toggleAddRole(false)}
+                    <CreateUserModal
+                        onClose={() => this._toggleAdd(false)}
                         onOk={() => { }}
                         show={this.state.showAdd}
                         onSuccess={this._onCretionSuccess}
                     />}
 
                 {this.state.showEdit &&
-                    <EditRoleModal
+                    <EditUserModal
                         id={this.state.selectedId}
-                        onClose={() => this._toggleEditRole(false, 0)}
+                        onClose={() => this._toggleEdit(false, 0)}
                         onOk={() => { }}
                         show={this.state.showEdit}
                         onSuccess={this._onEditSuccess}

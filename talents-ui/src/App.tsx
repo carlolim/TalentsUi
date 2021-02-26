@@ -10,6 +10,7 @@ import DashboardLayout from './pages/layout/dashboard';
 import Roles from "./pages/roles";
 import VerifyEmail from './pages/verifyemail';
 import ResendVerification from './pages/verifyemail/resend';
+import Users from './pages/users';
 
 function App() {
   return (
@@ -30,6 +31,11 @@ function App() {
         <Route exact path="/roles" render={(p) =>
           <DashboardLayout {...p}>
             <Roles {...p} />
+          </DashboardLayout>} />
+          
+        <Route exact path="/users" render={(p) =>
+          <DashboardLayout {...p}>
+            <Users {...p} />
           </DashboardLayout>} />
       </Switch>
     </Router>
