@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import moment from "moment";
-import { Button, Dropdown, Menu, message, Modal, Space, Spin, Table } from "antd";
-import { DeleteFilled, DownOutlined, EditFilled, PlusOutlined } from "@ant-design/icons";
+import { Button, Dropdown, Menu, message, Modal, Space, Spin, Table, Tag, Tooltip } from "antd";
+import { DeleteFilled, DownOutlined, EditFilled, InfoCircleFilled, PlusOutlined } from "@ant-design/icons";
 import "./style.css";
 import { DATETIME_FORMAT } from "../../models/constants";
 import { IUserRoleModel } from "../../models/user-role/IUserRoleModel";
@@ -40,6 +40,17 @@ export default class Roles extends Component<{}, IState> {
             render: (text: Date) => moment(text).format(DATETIME_FORMAT),
         },
         {
+            title: 'Default',
+            dataIndex: 'isDefault',
+            key: 'isDefault',
+            render: (isDefault: boolean) =>
+                isDefault ?
+                    <Tag color="green">
+                        Yes<Tooltip title="When adding a new user, this role will be checked by default."><InfoCircleFilled className="info-icon-tooltip" /></Tooltip>
+                    </Tag> :
+                    <Tag color="volcano">No</Tag>,
+        },
+        {
             title: 'Action',
             key: '',
             dataIndex: '',
@@ -47,7 +58,7 @@ export default class Roles extends Component<{}, IState> {
                 <Dropdown
                     overlay={
                         <>
-                            <Menu>
+                            <Menu className="drop-down">
                                 <Menu.Item key="0">
                                     <Button onClick={() => this._toggleEditRole(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
                                 </Menu.Item>
@@ -90,7 +101,9 @@ export default class Roles extends Component<{}, IState> {
     _delete = (id: number) => {
         Modal.confirm({
             title: "Delete?",
-            content: this.state.isLoading ? <div className="text-center"><Spin /></div> : <></>,
+            content: this.state.isLoading ? 
+                <div className="text-center"><Spin /></div> : 
+                <><p>Are you sure? This action is permanent.</p></>,
             onOk: async () => {
                 this.state.isLoading = true;
                 const result = await UserRoleService.delete(id);

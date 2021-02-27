@@ -1,11 +1,14 @@
 import { InfoCircleFilled, SaveFilled } from "@ant-design/icons";
-import { Alert, Button, Checkbox, Form, Input, message, Modal, Skeleton, Tooltip, Tree } from "antd";
+import { Alert, Button, Checkbox, Form, FormInstance, Input, message, Modal, Skeleton, Tooltip, Tree } from "antd";
 import React, { Component } from "react";
 import { IAlertModel } from "../../models/IAlertModel";
 import { ICreateUpdateUserRoleModel } from "../../models/user-role/ICreateUpdateUserRoleModel";
+import { IUserRoleModel } from "../../models/user-role/IUserRoleModel";
 import UserRoleService from "../../services/user-role-service";
+import UserService from "../../services/user-service";
 
 interface IProps {
+    id: number,
     show: boolean,
     onClose: () => void,
     onOk: () => void,
@@ -14,25 +17,26 @@ interface IProps {
 
 interface IState {
     isLoading: boolean,
-    alert: IAlertModel,
     isLoadingTree: boolean,
+    alert: IAlertModel,
+    grantedPermissions: Array<string>,
     allPermissions: any,
-    selectedPermissions: Array<string>,
     showSpinner: boolean
 }
 
-export default class CreateRoleModal extends Component<IProps, IState>{
+export default class SpecialPermissionsModal extends Component<IProps, IState>{
+    formRef = React.createRef<FormInstance>();
     state = {
         showSpinner: false,
         isLoading: false,
+        isLoadingTree: false,
         alert: {
             show: false,
             message: '',
             isSuccess: false
         },
-        isLoadingTree: false,
-        allPermissions: [],
-        selectedPermissions: []
+        grantedPermissions: [],
+        allPermissions: []
     }
 
     componentDidMount = async () => {
@@ -42,28 +46,24 @@ export default class CreateRoleModal extends Component<IProps, IState>{
     _loadData = async () => {
         this.setState({ isLoading: true, isLoadingTree: true, showSpinner: true });
         try {
+            const grantedPermissions = await UserService.getSpecialPermissions(this.props.id);
             const allPermissions = await UserRoleService.getAllPermissionsForTreeView();
-            this.setState({ allPermissions });
+            this.setState({ allPermissions, grantedPermissions: grantedPermissions.data, showSpinner: false });
         }
         catch (error) {
             message.error("An error occured");
         }
-        this.setState({ isLoading: false, isLoadingTree: false, showSpinner: false });
+        this.setState({ isLoading: false, isLoadingTree: false });
     }
 
     _onFinish = async (values: any) => {
         this.setState({ isLoading: true });
         try {
-            var data: ICreateUpdateUserRoleModel = {
-                grantedPermissions: this.state.selectedPermissions,
-                id: 0,
-                isDefault: values.isDefault,
-                name: values.name
-            };
-            const result = await UserRoleService.create(data);
+            const id = this.props.id;
+            const grantedPermissions = this.state.grantedPermissions;
+            const result = await UserService.saveSpecialPermissions(id, grantedPermissions);
             if (result.isSuccess) {
-                message.success("User role added.");
-                // this.setState({ alert: { show: true, message: `User role successfully added`, isSuccess: true } });
+                message.success("User permissions updated.");
                 this.props.onSuccess();
             }
             else {
@@ -77,8 +77,8 @@ export default class CreateRoleModal extends Component<IProps, IState>{
         this.setState({ isLoading: false });
     }
 
-    _selectPermissions = async (selectedPermissions: any) => {
-        this.setState({ selectedPermissions });
+    _selectPermissions = async (permissionList: any) => {
+        this.setState({ grantedPermissions: permissionList });
     }
 
     render() {
@@ -86,7 +86,7 @@ export default class CreateRoleModal extends Component<IProps, IState>{
             <>
                 <Modal
                     maskClosable={false}
-                    title="Create new role"
+                    title="Special permissions"
                     visible={this.props.show}
                     onOk={this.props.onOk}
                     onCancel={this.props.onClose}
@@ -95,8 +95,8 @@ export default class CreateRoleModal extends Component<IProps, IState>{
                             <Button key="back" onClick={this.props.onClose}>
                                 Cancel
                             </Button>,
-                            <Button icon={<SaveFilled />} form="createRoleForm" htmlType="submit" key="submit" type="primary" loading={this.state.isLoading} onClick={this.props.onOk}>
-                                Save
+                            <Button icon={<SaveFilled />} form="editSpecialPermissionsForm" htmlType="submit" key="submit" type="primary" loading={this.state.isLoading} onClick={this.props.onOk}>
+                                Save changes
                             </Button>,
                         ]
                     }>
@@ -105,25 +105,12 @@ export default class CreateRoleModal extends Component<IProps, IState>{
                         <Skeleton active /> :
                         <fieldset disabled={this.state.isLoading}>
                             <Form
-                                id="createRoleForm"
+                                ref={this.formRef}
+                                id="editSpecialPermissionsForm"
                                 layout="vertical"
                                 onFinish={this._onFinish}>
                                 {this.state.alert.show && <Alert type={this.state.alert.isSuccess ? 'success' : 'error'} message={this.state.alert.message} />}
                                 <p></p>
-                                <Form.Item
-                                    label="Name"
-                                    name="name"
-                                    rules={[{ required: true, message: 'Please provide role name' }]}>
-                                    <Input />
-                                </Form.Item>
-
-                                <Form.Item name="isDefault" valuePropName="checked">
-                                    <Checkbox>
-                                        Default
-                                        <Tooltip title="When adding a new user, this role will be checked by default."><InfoCircleFilled className="info-icon-tooltip" /></Tooltip>
-                                    </Checkbox>
-                                </Form.Item>
-
                                 <Form.Item
                                     label="Permissions">
                                     {!this.state.isLoadingTree &&
@@ -131,8 +118,8 @@ export default class CreateRoleModal extends Component<IProps, IState>{
                                             showLine
                                             checkable
                                             defaultExpandAll
-                                            selectedKeys={this.state.selectedPermissions}
-                                            checkedKeys={this.state.selectedPermissions}
+                                            selectedKeys={this.state.grantedPermissions}
+                                            checkedKeys={this.state.grantedPermissions}
                                             onCheck={this._selectPermissions}
                                             treeData={this.state.allPermissions}
                                         />

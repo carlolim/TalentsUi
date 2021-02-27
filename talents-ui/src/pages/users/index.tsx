@@ -1,20 +1,22 @@
 import React, { Component } from "react";
 import moment from "moment";
-import { Button, Dropdown, Menu, message, Modal, Space, Spin, Table, Tag } from "antd";
-import { DeleteFilled, DownOutlined, EditFilled, PlusOutlined } from "@ant-design/icons";
+import { Button, Divider, Dropdown, Menu, message, Modal, Space, Spin, Table, Tag } from "antd";
+import { DeleteFilled, DownOutlined, EditFilled, LockFilled, LoginOutlined, PlusOutlined, SolutionOutlined, UnlockFilled } from "@ant-design/icons";
 import "./style.css";
-import { DATETIME_FORMAT } from "../../models/constants";
+import { DATETIME_FORMAT, LOCALSTORAGE } from "../../models/constants";
 import Search from "antd/lib/input/Search";
 import EditUserModal from "./edit-user-modal";
 import CreateUserModal from "./create-user-modal";
 import { IUserModel } from "../../models/user/IUserModel";
 import UserService from "../../services/user-service";
+import SpecialPermissionsModal from "./special-permissions-modal";
 
 interface IState {
     isLoading: boolean,
     data: Array<IUserModel>,
     showAdd: boolean,
     showEdit: boolean,
+    showSpecialPermissions: boolean,
     selectedId: number
 }
 export default class Users extends Component<{}, IState> {
@@ -23,6 +25,7 @@ export default class Users extends Component<{}, IState> {
         data: [],
         showAdd: false,
         showEdit: false,
+        showSpecialPermissions: false,
         selectedId: 0
     }
 
@@ -43,13 +46,13 @@ export default class Users extends Component<{}, IState> {
             title: 'Roles',
             dataIndex: 'roles',
             key: 'roles',
-            render: (text: Array<string>) => text.map(t => <Tag color="blue" key={t} title={t} />),
+            render: (text: Array<string>) => text.map(t => <Tag color="blue" key={t}>{t}</Tag>),
         },
         {
             title: 'Email verified',
             dataIndex: 'isEmailVerified',
             key: 'isEmailVerified',
-            render: (text: boolean) => text ? <Tag color="green" title="Yes" /> : <Tag color="red" title="No" />,
+            render: (text: boolean) => text ? <Tag color="green">Yes</Tag> : <Tag color="red">No</Tag>,
         },
         {
             title: 'Action',
@@ -59,9 +62,18 @@ export default class Users extends Component<{}, IState> {
                 <Dropdown
                     overlay={
                         <>
-                            <Menu>
+                            <Menu className="drop-down">
+                                <Menu.Item key="loginasuser">
+                                    <Button onClick={async () => await this._handleLoginAsUserClick(row)} type="link" icon={<LoginOutlined />}>Login as this user</Button>
+                                </Menu.Item>
                                 <Menu.Item key="0">
                                     <Button onClick={() => this._toggleEdit(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
+                                </Menu.Item>
+                                <Menu.Item key="2">
+                                    <Button onClick={() => this._toggleSpecialPermissions(true, row.id)} type="link" icon={<SolutionOutlined />}>Special Permissions</Button>
+                                </Menu.Item>
+                                <Menu.Item key="lockunlock">
+                                    <Button onClick={() => this._toggleLockUnlock(row.id, !row.isLocked)} type="link" icon={row.isLocked ? <UnlockFilled /> : <LockFilled />}>{row.isLocked ? 'Unlock' : 'Lock'}</Button>
                                 </Menu.Item>
                                 <Menu.Item key="1">
                                     <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
@@ -87,7 +99,8 @@ export default class Users extends Component<{}, IState> {
     }
 
     _toggleEdit = async (showEdit: boolean, selectedId: number) => this.setState({ showEdit, selectedId })
-    _toggleAdd = async (showAdd: boolean) => this.setState({ showAdd })
+    _toggleAdd = async (showAdd: boolean) => this.setState({ showAdd });
+    _toggleSpecialPermissions = async (showSpecialPermissions: boolean, selectedId: number) => this.setState({ showSpecialPermissions, selectedId });
     _onSearch = async (str: string) => await this._loadData(str);
 
     _onCretionSuccess = async () => {
@@ -98,11 +111,17 @@ export default class Users extends Component<{}, IState> {
         this._toggleEdit(false, 0);
         await this._loadData();
     }
+    _onSpecialPermissionSuccess = async () => {
+        this._toggleSpecialPermissions(false, 0);
+        await this._loadData();
+    }
 
     _delete = (id: number) => {
         Modal.confirm({
             title: "Delete?",
-            content: this.state.isLoading ? <div className="text-center"><Spin /></div> : <></>,
+            content: this.state.isLoading ?
+                <div className="text-center"><Spin /></div> :
+                <><p>Are you sure? This action is permanent.</p></>,
             onOk: async () => {
                 this.state.isLoading = true;
                 const result = await UserService.delete(id);
@@ -116,6 +135,54 @@ export default class Users extends Component<{}, IState> {
         });
     }
 
+    _toggleLockUnlock = (userId: number, isLocked: boolean) => {
+        Modal.confirm({
+            title: "Confirm",
+            content: this.state.isLoading ?
+                <div className="text-center"><Spin /></div> :
+                <><p>{isLocked ? 'Lock' : 'Unlock'} this user account?</p></>,
+            onOk: async () => {
+                this.state.isLoading = true;
+                const result = await UserService.toggleLock(userId, isLocked);
+                if (result.isSuccess) await this._loadData();
+                else message.error(result.message);
+                this.state.isLoading = false;
+            },
+            okButtonProps: { loading: this.state.isLoading },
+            cancelButtonProps: { loading: this.state.isLoading },
+            keyboard: false
+        });
+    }
+
+    _handleLoginAsUserClick = async (user: IUserModel) => {
+        Modal.confirm({
+            title: "Confirm",
+            content: this.state.isLoading ?
+                <div className="text-center"><Spin /></div> :
+                <><p>Login as {`${user.firstName} ${user.lastName}`}</p></>,
+            onOk: async () => await this._impersonate(user.id),
+            okButtonProps: { loading: this.state.isLoading },
+            cancelButtonProps: { loading: this.state.isLoading },
+            keyboard: false
+        });
+    }
+
+    _impersonate = async (id: number) => {
+        try {
+            const result = await UserService.impersonate(id);
+            if (result.isSuccess) {
+                message.success("Redirecting you to dashboard.");
+                localStorage.setItem(LOCALSTORAGE.TOKEN, result.data);
+                window.location.href = '/dashboard';
+            }
+            else {
+                message.error(result.message);
+            }
+        }
+        catch (error) {
+            message.error("An error occured while processing request");
+        }
+    }
     render() {
         return (
             <>
@@ -146,6 +213,15 @@ export default class Users extends Component<{}, IState> {
                         onOk={() => { }}
                         show={this.state.showEdit}
                         onSuccess={this._onEditSuccess}
+                    />}
+                    
+                {this.state.showSpecialPermissions &&
+                    <SpecialPermissionsModal
+                        id={this.state.selectedId}
+                        onClose={() => this._toggleSpecialPermissions(false, 0)}
+                        onOk={() => { }}
+                        show={this.state.showSpecialPermissions}
+                        onSuccess={this._onSpecialPermissionSuccess}
                     />}
             </>
         );

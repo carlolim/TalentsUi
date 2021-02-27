@@ -3,8 +3,9 @@ import "./style.css";
 import { Layout, Menu, Button } from "antd";
 import {
     DashboardOutlined,
-    SettingOutlined, 
-    SolutionOutlined, 
+    LogoutOutlined,
+    SettingOutlined,
+    SolutionOutlined,
     TeamOutlined,
 } from "@ant-design/icons";
 import { Link, RouteComponentProps } from "react-router-dom";
@@ -32,7 +33,7 @@ export default class DashboardLayout extends Component<RouteComponentProps, ISta
     _handleLogout = (e: any) => {
         e.preventDefault();
         localStorage.clear();
-        window.location.href = '/';
+        window.location.href = '/login';
     }
 
     render() {
@@ -57,6 +58,9 @@ export default class DashboardLayout extends Component<RouteComponentProps, ISta
                                     <Link to="/roles">Roles</Link>
                                 </Menu.Item>
                             </Menu.SubMenu>
+                            <Menu.Item key="logout" icon={<LogoutOutlined />}>
+                                <a href="#" onClick={this._handleLogout}>Logout</a>
+                            </Menu.Item>
                         </Menu>
                     </Layout.Sider>
                     <Layout className="site-layout">

@@ -1,3 +1,5 @@
+import { ICreateUpdateUserRoleItem } from "./ICreateUpdateUserRoleItem";
+
 export interface IUserModel {
     id: number,
     firstName: string,
@@ -7,6 +9,6 @@ export interface IUserModel {
     isLocked: boolean,
     shouldSetPasswordOnNextLogin: boolean,
     isLockOutEnabled: boolean,
-    roles: Array<string>,
+    roles: Array<ICreateUpdateUserRoleItem>,
     isEmailVerified: boolean,
 }

@@ -12,5 +12,6 @@ export interface ICreateUpdateUserModel {
     shouldSetPasswordOnNextLogin: boolean,
     sendActivationEmail: boolean,
     isLockOutEnabled: boolean,
+    emailVerificationRequired: boolean,
     roles: Array<ICreateUpdateUserRoleItem>
 }
