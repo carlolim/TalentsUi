@@ -6,6 +6,7 @@ import { Link, RouteComponentProps } from "react-router-dom";
 import { IAlertModel } from "../../models/IAlertModel";
 import AccountService from "../../services/account-service";
 import { IResetPasswordModel } from "../../models/account/IResetPasswordModel";
+import { LOCALSTORAGE } from "../../models/constants";
 
 interface IState {
     isLoading: boolean,
@@ -31,8 +32,9 @@ export default class ResetPassword extends Component<RouteComponentProps<{ token
             const result = await AccountService.resetPassword(data);
             if (result.isSuccess) {
                 message.success("Success");
-                this.setState({ alert: { show: true, message: `Password changed. Redirecting to login`, isSuccess: true } });
-                setTimeout(() => window.location.href = '/login', 3000);
+                this.setState({ alert: { show: true, message: `Login successful. Redirecting you to dashboard.`, isSuccess: true } });
+                localStorage.setItem(LOCALSTORAGE.TOKEN, result.data);
+                window.location.href = '/dashboard';
             }
             else {
                 message.error(result.message);

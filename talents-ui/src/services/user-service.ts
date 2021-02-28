@@ -182,4 +182,21 @@ export default class UserService {
                 });
         });
     }
+    
+    static getCurrentUserPermissions = async (): Promise<Array<string>> => {
+        return new Promise((resolve, reject) => {
+            axios.get(`${process.env.REACT_APP_API_ENDPOINT}/api/user/permissions`,
+                {
+                    headers: {
+                        "Authorization": `bearer ${localStorage.getItem(LOCALSTORAGE.TOKEN)}`
+                    }
+                })
+                .then(function (response) {
+                    resolve(response.data);
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
+    }
 }

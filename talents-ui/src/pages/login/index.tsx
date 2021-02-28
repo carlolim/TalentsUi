@@ -31,10 +31,15 @@ export default class Login extends Component<{}, IState> {
         try {
             const result = await AccountService.login(data);
             if (result.isSuccess) {
-                message.success("Redirecting you to dashboard.");
-                this.setState({ alert: { show: true, message: `Login successful. Redirecting you to dashboard.`, isSuccess: true } });
-                localStorage.setItem(LOCALSTORAGE.TOKEN, result.message);
-                window.location.href = '/dashboard';
+                message.success("Login successful!");
+                this.setState({ alert: { show: true, message: `Login successful.`, isSuccess: true } });
+                if (result.message === "should-set-password") {
+                    window.location.href = `/resetpassword/${result.data}`;
+                }
+                else {
+                    localStorage.setItem(LOCALSTORAGE.TOKEN, result.data);
+                    window.location.href = '/dashboard';
+                }
             }
             else {
                 message.error(result.message);

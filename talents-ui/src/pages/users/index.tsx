@@ -3,13 +3,14 @@ import moment from "moment";
 import { Button, Divider, Dropdown, Menu, message, Modal, Space, Spin, Table, Tag } from "antd";
 import { DeleteFilled, DownOutlined, EditFilled, LockFilled, LoginOutlined, PlusOutlined, SolutionOutlined, UnlockFilled } from "@ant-design/icons";
 import "./style.css";
-import { DATETIME_FORMAT, LOCALSTORAGE } from "../../models/constants";
+import { DATETIME_FORMAT, LOCALSTORAGE, PERMISSIONS } from "../../models/constants";
 import Search from "antd/lib/input/Search";
 import EditUserModal from "./edit-user-modal";
 import CreateUserModal from "./create-user-modal";
 import { IUserModel } from "../../models/user/IUserModel";
 import UserService from "../../services/user-service";
 import SpecialPermissionsModal from "./special-permissions-modal";
+import CheckPermission from "../../helpers/permission-helper";
 
 interface IState {
     isLoading: boolean,
@@ -59,33 +60,57 @@ export default class Users extends Component<{}, IState> {
             key: '',
             dataIndex: '',
             render: (data: any, row: IUserModel) =>
-                <Dropdown
-                    overlay={
-                        <>
-                            <Menu className="drop-down">
-                                <Menu.Item key="loginasuser">
-                                    <Button onClick={async () => await this._handleLoginAsUserClick(row)} type="link" icon={<LoginOutlined />}>Login as this user</Button>
-                                </Menu.Item>
-                                <Menu.Item key="0">
-                                    <Button onClick={() => this._toggleEdit(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
-                                </Menu.Item>
-                                <Menu.Item key="2">
-                                    <Button onClick={() => this._toggleSpecialPermissions(true, row.id)} type="link" icon={<SolutionOutlined />}>Special Permissions</Button>
-                                </Menu.Item>
-                                <Menu.Item key="lockunlock">
-                                    <Button onClick={() => this._toggleLockUnlock(row.id, !row.isLocked)} type="link" icon={row.isLocked ? <UnlockFilled /> : <LockFilled />}>{row.isLocked ? 'Unlock' : 'Lock'}</Button>
-                                </Menu.Item>
-                                <Menu.Item key="1">
-                                    <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
-                                </Menu.Item>
-                            </Menu>
-                        </>
-                    }
-                    trigger={['click']}>
-                    <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
-                        Action <DownOutlined />
-                    </a>
-                </Dropdown>
+                <CheckPermission
+                    requiredPermissions={[
+                        PERMISSIONS.UsersDelete,
+                        PERMISSIONS.UsersImpersonate,
+                        PERMISSIONS.UsersLock,
+                        PERMISSIONS.UsersSpecialPermission,
+                        PERMISSIONS.UsersUpdate
+                    ]}>
+                    <Dropdown
+                        overlay={
+                            <>
+                                <Menu className="drop-down">
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersImpersonate]}>
+                                        <Menu.Item key="loginasuser">
+                                            <Button onClick={async () => await this._handleLoginAsUserClick(row)} type="link" icon={<LoginOutlined />}>Login as this user</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersUpdate]}>
+                                        <Menu.Item key="0">
+                                            <Button onClick={() => this._toggleEdit(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersSpecialPermission]}>
+                                        <Menu.Item key="2">
+                                            <Button onClick={() => this._toggleSpecialPermissions(true, row.id)} type="link" icon={<SolutionOutlined />}>Special Permissions</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersLock]}>
+                                        <Menu.Item key="lockunlock">
+                                            <Button onClick={() => this._toggleLockUnlock(row.id, !row.isLocked)} type="link" icon={row.isLocked ? <UnlockFilled /> : <LockFilled />}>{row.isLocked ? 'Unlock' : 'Lock'}</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersDelete]}>
+                                        <Menu.Item key="1">
+                                            <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+
+                                </Menu>
+                            </>
+                        }
+                        trigger={['click']}>
+                        <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
+                            Action <DownOutlined />
+                        </a>
+                    </Dropdown>
+                </CheckPermission>
             ,
         },
     ]
@@ -190,7 +215,9 @@ export default class Users extends Component<{}, IState> {
 
                 <Search placeholder="Name, Email" onSearch={this._onSearch} enterButton allowClear />
                 <div style={{ height: 25 }}></div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => this._toggleAdd(true)}>Add new</Button>
+                <CheckPermission requiredPermissions={[PERMISSIONS.UsersCreate]}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => this._toggleAdd(true)}>Add new</Button>
+                </CheckPermission>
                 <p></p>
                 <Table
                     loading={this.state.isLoading}
@@ -214,7 +241,7 @@ export default class Users extends Component<{}, IState> {
                         show={this.state.showEdit}
                         onSuccess={this._onEditSuccess}
                     />}
-                    
+
                 {this.state.showSpecialPermissions &&
                     <SpecialPermissionsModal
                         id={this.state.selectedId}

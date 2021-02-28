@@ -1,6 +1,8 @@
 import { InfoCircleFilled, SaveFilled } from "@ant-design/icons";
 import { Alert, Button, Checkbox, Form, FormInstance, Input, message, Modal, Skeleton, Tooltip, Tree } from "antd";
 import React, { Component } from "react";
+import CheckPermission from "../../helpers/permission-helper";
+import { PERMISSIONS } from "../../models/constants";
 import { IAlertModel } from "../../models/IAlertModel";
 import { ICreateUpdateUserRoleModel } from "../../models/user-role/ICreateUpdateUserRoleModel";
 import { IUserRoleModel } from "../../models/user-role/IUserRoleModel";
@@ -105,9 +107,11 @@ export default class EditRoleModal extends Component<IProps, IState>{
                             <Button key="back" onClick={this.props.onClose}>
                                 Cancel
                             </Button>,
-                            <Button icon={<SaveFilled />} form="editRoleForm" htmlType="submit" key="submit" type="primary" loading={this.state.isLoading} onClick={this.props.onOk}>
-                                Save changes
-                            </Button>,
+                            <CheckPermission key="permissioncheck" requiredPermissions={[PERMISSIONS.RolesUpdate]}>
+                                <Button icon={<SaveFilled />} form="editRoleForm" htmlType="submit" key="submit" type="primary" loading={this.state.isLoading} onClick={this.props.onOk}>
+                                    Save changes
+                            </Button>
+                            </CheckPermission>,
                         ]
                     }>
 

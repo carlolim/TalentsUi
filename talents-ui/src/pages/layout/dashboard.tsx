@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import "./style.css";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Menu } from "antd";
 import {
     DashboardOutlined,
     LogoutOutlined,
@@ -9,9 +9,10 @@ import {
     TeamOutlined,
 } from "@ant-design/icons";
 import { Link, RouteComponentProps } from "react-router-dom";
-import { LOCALSTORAGE } from "../../models/constants";
+import { LOCALSTORAGE, PERMISSIONS } from "../../models/constants";
 import AccountService from "../../services/account-service";
-
+import CheckPermission, { PermissionHelper } from "../../helpers/permission-helper";
+import { MainContext } from "../../contexts/main-context";
 
 interface IState {
     collapsed: boolean,
@@ -19,6 +20,13 @@ interface IState {
 }
 
 export default class DashboardLayout extends Component<RouteComponentProps, IState>{
+    static contextType = MainContext;
+
+    _isAllowed = (requiredPermissions: Array<string>): boolean => {
+        const permissions: Array<string> = this.context.permissions;
+        return PermissionHelper.isAllowed(permissions, requiredPermissions);
+    }
+
     state = {
         collapsed: localStorage.getItem(LOCALSTORAGE.IS_MOBILE_APP) !== null,
         theme: 'light'
@@ -46,18 +54,33 @@ export default class DashboardLayout extends Component<RouteComponentProps, ISta
                                 <img src="https://via.placeholder.com/150" /><span>Talents</span>
                             </Link>
                         </div>
-                        <Menu theme={this.state.theme === 'light' ? "light" : "dark"} defaultSelectedKeys={['1']} mode="inline">
-                            <Menu.Item key="1" icon={<DashboardOutlined />}>
-                                <Link to="/dashboard">Dashboard</Link>
-                            </Menu.Item>
-                            <Menu.SubMenu key="admin" icon={<SettingOutlined />} title="Administration">
-                                <Menu.Item key="admin-users" icon={<TeamOutlined />}>
-                                    <Link to="/users">Users</Link>
+                        <Menu theme={this.state.theme === 'light' ? "light" : "dark"} mode="inline">
+
+                            {this._isAllowed([PERMISSIONS.Dashboard]) &&
+                                <Menu.Item key="1" icon={<DashboardOutlined />}>
+                                    <Link to="/dashboard">Dashboard</Link>
                                 </Menu.Item>
-                                <Menu.Item key="admin-roles" icon={<SolutionOutlined />}>
-                                    <Link to="/roles">Roles</Link>
-                                </Menu.Item>
-                            </Menu.SubMenu>
+                            }
+
+                            {this._isAllowed([PERMISSIONS.Administration]) &&
+                                <Menu.SubMenu key="admin" icon={<SettingOutlined />} title="Administration">
+
+                                    {this._isAllowed([PERMISSIONS.Users]) &&
+                                        <Menu.Item key="admin-users" icon={<TeamOutlined />}>
+                                            <Link to="/users">Users</Link>
+                                        </Menu.Item>
+                                    }
+
+                                    {this._isAllowed([PERMISSIONS.Roles]) &&
+                                        <Menu.Item key="admin-roles" icon={<SolutionOutlined />}>
+                                            <Link to="/roles">Roles</Link>
+                                        </Menu.Item>
+                                    }
+
+                                </Menu.SubMenu>
+                            }
+
+
                             <Menu.Item key="logout" icon={<LogoutOutlined />}>
                                 <a href="#" onClick={this._handleLogout}>Logout</a>
                             </Menu.Item>

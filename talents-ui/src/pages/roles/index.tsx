@@ -3,12 +3,13 @@ import moment from "moment";
 import { Button, Dropdown, Menu, message, Modal, Space, Spin, Table, Tag, Tooltip } from "antd";
 import { DeleteFilled, DownOutlined, EditFilled, InfoCircleFilled, PlusOutlined } from "@ant-design/icons";
 import "./style.css";
-import { DATETIME_FORMAT } from "../../models/constants";
+import { DATETIME_FORMAT, PERMISSIONS } from "../../models/constants";
 import { IUserRoleModel } from "../../models/user-role/IUserRoleModel";
 import Search from "antd/lib/input/Search";
 import EditRoleModal from "./edit-role-modal";
 import CreateRoleModal from "./create-role-modal";
 import UserRoleService from "../../services/user-role-service";
+import CheckPermission from "../../helpers/permission-helper";
 
 interface IState {
     isLoading: boolean,
@@ -55,24 +56,30 @@ export default class Roles extends Component<{}, IState> {
             key: '',
             dataIndex: '',
             render: (data: any, row: IUserRoleModel) =>
-                <Dropdown
-                    overlay={
-                        <>
-                            <Menu className="drop-down">
-                                <Menu.Item key="0">
-                                    <Button onClick={() => this._toggleEditRole(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
-                                </Menu.Item>
-                                <Menu.Item key="1">
-                                    <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
-                                </Menu.Item>
-                            </Menu>
-                        </>
-                    }
-                    trigger={['click']}>
-                    <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
-                        Action <DownOutlined />
-                    </a>
-                </Dropdown>
+                <CheckPermission requiredPermissions={[PERMISSIONS.RolesDelete, PERMISSIONS.RolesUpdate]}>
+                    <Dropdown
+                        overlay={
+                            <>
+                                <Menu className="drop-down">
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.RolesUpdate]}>
+                                        <Menu.Item key="0">
+                                            <Button onClick={() => this._toggleEditRole(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+                                    <CheckPermission requiredPermissions={[PERMISSIONS.RolesDelete]}>
+                                        <Menu.Item key="1">
+                                            <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
+                                        </Menu.Item>
+                                    </CheckPermission>
+                                </Menu>
+                            </>
+                        }
+                        trigger={['click']}>
+                        <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
+                            Action <DownOutlined />
+                        </a>
+                    </Dropdown>
+                </CheckPermission>
             ,
         },
     ]
@@ -101,8 +108,8 @@ export default class Roles extends Component<{}, IState> {
     _delete = (id: number) => {
         Modal.confirm({
             title: "Delete?",
-            content: this.state.isLoading ? 
-                <div className="text-center"><Spin /></div> : 
+            content: this.state.isLoading ?
+                <div className="text-center"><Spin /></div> :
                 <><p>Are you sure? This action is permanent.</p></>,
             onOk: async () => {
                 this.state.isLoading = true;
@@ -124,8 +131,10 @@ export default class Roles extends Component<{}, IState> {
 
                 <Search placeholder="Role name" onSearch={this._onSearch} enterButton allowClear />
                 <div style={{ height: 25 }}></div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => this._toggleAddRole(true)}>Add new</Button>
-                <p></p>
+                <CheckPermission requiredPermissions={[PERMISSIONS.RolesCreate]}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => this._toggleAddRole(true)}>Add new</Button>
+                    <p></p>
+                </CheckPermission>
                 <Table
                     loading={this.state.isLoading}
                     columns={this.columns}
