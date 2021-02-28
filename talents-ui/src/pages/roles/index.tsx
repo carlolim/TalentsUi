@@ -9,7 +9,8 @@ import Search from "antd/lib/input/Search";
 import EditRoleModal from "./edit-role-modal";
 import CreateRoleModal from "./create-role-modal";
 import UserRoleService from "../../services/user-role-service";
-import CheckPermission from "../../helpers/permission-helper";
+import CheckPermission, { PermissionHelper } from "../../helpers/permission-helper";
+import { MainContext } from "../../contexts/main-context";
 
 interface IState {
     isLoading: boolean,
@@ -19,6 +20,13 @@ interface IState {
     selectedId: number
 }
 export default class Roles extends Component<{}, IState> {
+    static contextType = MainContext;
+
+    _isAllowed = (requiredPermissions: Array<string>): boolean => {
+        const permissions: Array<string> = this.context.permissions;
+        return PermissionHelper.isAllowed(permissions, requiredPermissions);
+    }
+
     state = {
         isLoading: false,
         data: [],
@@ -56,31 +64,29 @@ export default class Roles extends Component<{}, IState> {
             key: '',
             dataIndex: '',
             render: (data: any, row: IUserRoleModel) =>
-                <CheckPermission requiredPermissions={[PERMISSIONS.RolesDelete, PERMISSIONS.RolesUpdate]}>
-                    <Dropdown
-                        overlay={
-                            <>
-                                <Menu className="drop-down">
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.RolesUpdate]}>
-                                        <Menu.Item key="0">
-                                            <Button onClick={() => this._toggleEditRole(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.RolesDelete]}>
-                                        <Menu.Item key="1">
-                                            <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
-                                </Menu>
-                            </>
-                        }
-                        trigger={['click']}>
-                        <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
-                            Action <DownOutlined />
-                        </a>
-                    </Dropdown>
-                </CheckPermission>
-            ,
+                this._isAllowed([PERMISSIONS.RolesDelete, PERMISSIONS.RolesUpdate]) &&
+                <Dropdown
+                    overlay={
+                        <>
+                            <Menu className="drop-down">
+                                {this._isAllowed([PERMISSIONS.RolesUpdate]) &&
+                                    <Menu.Item key="0">
+                                        <Button onClick={() => this._toggleEditRole(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
+                                    </Menu.Item>
+                                }
+                                {this._isAllowed([PERMISSIONS.RolesDelete]) &&
+                                    <Menu.Item key="1">
+                                        <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
+                                    </Menu.Item>
+                                }
+                            </Menu>
+                        </>
+                    }
+                    trigger={['click']}>
+                    <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
+                        Action <DownOutlined />
+                    </a>
+                </Dropdown>
         },
     ]
 

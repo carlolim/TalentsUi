@@ -10,7 +10,8 @@ import CreateUserModal from "./create-user-modal";
 import { IUserModel } from "../../models/user/IUserModel";
 import UserService from "../../services/user-service";
 import SpecialPermissionsModal from "./special-permissions-modal";
-import CheckPermission from "../../helpers/permission-helper";
+import CheckPermission, { PermissionHelper } from "../../helpers/permission-helper";
+import { MainContext } from "../../contexts/main-context";
 
 interface IState {
     isLoading: boolean,
@@ -21,6 +22,13 @@ interface IState {
     selectedId: number
 }
 export default class Users extends Component<{}, IState> {
+    static contextType = MainContext;
+
+    _isAllowed = (requiredPermissions: Array<string>): boolean => {
+        const permissions: Array<string> = this.context.permissions;
+        return PermissionHelper.isAllowed(permissions, requiredPermissions);
+    }
+
     state = {
         isLoading: false,
         data: [],
@@ -60,58 +68,55 @@ export default class Users extends Component<{}, IState> {
             key: '',
             dataIndex: '',
             render: (data: any, row: IUserModel) =>
-                <CheckPermission
-                    requiredPermissions={[
-                        PERMISSIONS.UsersDelete,
-                        PERMISSIONS.UsersImpersonate,
-                        PERMISSIONS.UsersLock,
-                        PERMISSIONS.UsersSpecialPermission,
-                        PERMISSIONS.UsersUpdate
-                    ]}>
-                    <Dropdown
-                        overlay={
-                            <>
-                                <Menu className="drop-down">
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersImpersonate]}>
-                                        <Menu.Item key="loginasuser">
-                                            <Button onClick={async () => await this._handleLoginAsUserClick(row)} type="link" icon={<LoginOutlined />}>Login as this user</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
+                this._isAllowed([
+                    PERMISSIONS.UsersDelete,
+                    PERMISSIONS.UsersImpersonate,
+                    PERMISSIONS.UsersLock,
+                    PERMISSIONS.UsersSpecialPermission,
+                    PERMISSIONS.UsersUpdate
+                ]) &&
+                <Dropdown
+                    overlay={
+                        <>
+                            <Menu className="drop-down">
+                                {this._isAllowed([PERMISSIONS.UsersImpersonate]) &&
+                                    <Menu.Item key="loginasuser">
+                                        <Button onClick={async () => await this._handleLoginAsUserClick(row)} type="link" icon={<LoginOutlined />}>Login as this user</Button>
+                                    </Menu.Item>
+                                }
 
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersUpdate]}>
-                                        <Menu.Item key="0">
-                                            <Button onClick={() => this._toggleEdit(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
+                                {this._isAllowed([PERMISSIONS.UsersUpdate]) &&
+                                    <Menu.Item key="0">
+                                        <Button onClick={() => this._toggleEdit(true, row.id)} type="link" icon={<EditFilled />}>Edit</Button>
+                                    </Menu.Item>
+                                }
 
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersSpecialPermission]}>
-                                        <Menu.Item key="2">
-                                            <Button onClick={() => this._toggleSpecialPermissions(true, row.id)} type="link" icon={<SolutionOutlined />}>Special Permissions</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
+                                {this._isAllowed([PERMISSIONS.UsersSpecialPermission]) &&
+                                    <Menu.Item key="2">
+                                        <Button onClick={() => this._toggleSpecialPermissions(true, row.id)} type="link" icon={<SolutionOutlined />}>Special Permissions</Button>
+                                    </Menu.Item>
+                                }
 
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersLock]}>
-                                        <Menu.Item key="lockunlock">
-                                            <Button onClick={() => this._toggleLockUnlock(row.id, !row.isLocked)} type="link" icon={row.isLocked ? <UnlockFilled /> : <LockFilled />}>{row.isLocked ? 'Unlock' : 'Lock'}</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
+                                {this._isAllowed([PERMISSIONS.UsersLock]) &&
+                                    <Menu.Item key="lockunlock">
+                                        <Button onClick={() => this._toggleLockUnlock(row.id, !row.isLocked)} type="link" icon={row.isLocked ? <UnlockFilled /> : <LockFilled />}>{row.isLocked ? 'Unlock' : 'Lock'}</Button>
+                                    </Menu.Item>
+                                }
 
-                                    <CheckPermission requiredPermissions={[PERMISSIONS.UsersDelete]}>
-                                        <Menu.Item key="1">
-                                            <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
-                                        </Menu.Item>
-                                    </CheckPermission>
+                                {this._isAllowed([PERMISSIONS.UsersDelete]) &&
+                                    <Menu.Item key="1">
+                                        <Button onClick={() => this._delete(row.id)} type="link" danger icon={<DeleteFilled />}>Delete</Button>
+                                    </Menu.Item>
+                                }
 
-                                </Menu>
-                            </>
-                        }
-                        trigger={['click']}>
-                        <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
-                            Action <DownOutlined />
-                        </a>
-                    </Dropdown>
-                </CheckPermission>
-            ,
+                            </Menu>
+                        </>
+                    }
+                    trigger={['click']}>
+                    <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
+                        Action <DownOutlined />
+                    </a>
+                </Dropdown>
         },
     ]
 
