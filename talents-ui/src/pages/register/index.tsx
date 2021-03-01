@@ -136,7 +136,7 @@ export default class Register extends Component<{}, IState> {
                                         rules={[
                                             { required: true, message: 'Please input your password!' }
                                         ]}>
-                                        <Input.Password />
+                                        <Input.Password autoComplete="new-password" />
                                     </Form.Item>
                                 </Col>
                                 <Col xs={24}>
@@ -154,7 +154,7 @@ export default class Register extends Component<{}, IState> {
                                                 },
                                             }),
                                         ]}>
-                                        <Input.Password />
+                                        <Input.Password autoComplete="new-password" />
                                     </Form.Item>
                                 </Col>
                             </Row>

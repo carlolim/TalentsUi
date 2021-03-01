@@ -13,6 +13,7 @@ import ResendVerification from './pages/verifyemail/resend';
 import Users from './pages/users';
 import UserService from './services/user-service';
 import { MainContext } from './contexts/main-context';
+import LandingPage from './pages/_landing-page';
 
 interface IState {
   permissions: Array<string>
@@ -32,6 +33,7 @@ export default class App extends Component<{}, IState> {
       <MainContext.Provider value={this.state}>
         <Router>
           <Switch>
+            <Route exact path="/" component={LandingPage} />
             <Route exact path="/login" component={Login} />
             <Route exact path="/register" component={Register} />
             <Route exact path="/emailverification/:token" component={VerifyEmail} />
