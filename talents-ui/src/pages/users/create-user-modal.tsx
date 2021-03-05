@@ -1,5 +1,5 @@
-import { InfoCircleFilled, SaveFilled } from "@ant-design/icons";
-import { Alert, Button, Checkbox, Divider, Form, FormInstance, Input, message, Modal, Skeleton, Spin, Tooltip, Tree } from "antd";
+import { InfoCircleFilled, PlusOutlined, SaveFilled } from "@ant-design/icons";
+import { Alert, Button, Checkbox, Divider, Form, FormInstance, Input, message, Modal, Skeleton, Spin, Tooltip, Tree, Upload } from "antd";
 import React, { Component } from "react";
 import { IAlertModel } from "../../models/IAlertModel";
 import { ICreateUpdateUserModel } from "../../models/user/ICreateUpdateUserModel";
@@ -18,7 +18,9 @@ interface IState {
     isLoading: boolean,
     alert: IAlertModel,
     roles: Array<ICreateUpdateUserRoleItem>,
-    setRandomPassword: boolean
+    setRandomPassword: boolean,
+    picturePreview: string,
+    pictureFile?: File
 }
 
 export default class CreateUserModal extends Component<IProps, IState>{
@@ -32,7 +34,9 @@ export default class CreateUserModal extends Component<IProps, IState>{
             isSuccess: false
         },
         roles: [],
-        setRandomPassword: true
+        setRandomPassword: true,
+        picturePreview: '',
+        pictureFile: undefined
     }
 
     componentDidMount = async () => {
@@ -50,10 +54,10 @@ export default class CreateUserModal extends Component<IProps, IState>{
         try {
             var roles: Array<ICreateUpdateUserRoleItem> = [];
             if (values.roles) {
-                values.roles.forEach((r: number) => roles.push({ roleId: r, name: '', isChecked: true }));
+                values.roles.forEach((r: number) => roles.push({ roleId: r === undefined ? 0 : r, name: '', isChecked: true }));
             }
 
-            var data: ICreateUpdateUserModel = { ...values, roles };
+            var data: ICreateUpdateUserModel = { ...values, roles, uploadedPicture: this.state.pictureFile };
             const result = await UserService.create(data);
             if (result.isSuccess) {
                 message.success("User added.");
@@ -71,7 +75,11 @@ export default class CreateUserModal extends Component<IProps, IState>{
     }
 
     _toggleSetRandomPassword = (setRandomPassword: boolean) => this.setState({ setRandomPassword });
-
+    _removePicture = () => this.setState({ picturePreview: '', pictureFile: undefined });
+    _beforeUpload = (file: File) => {
+        this.setState({ picturePreview: URL.createObjectURL(file), pictureFile: file });
+        return false;
+    }
     render() {
         return (
             <>
@@ -111,6 +119,22 @@ export default class CreateUserModal extends Component<IProps, IState>{
                                 onFinish={this._onFinish}>
                                 {this.state.alert.show && <Alert type={this.state.alert.isSuccess ? 'success' : 'error'} message={this.state.alert.message} />}
                                 <p></p>
+                                <div className="text-center">
+                                    <Upload
+                                        name="avatar"
+                                        listType="picture-card"
+                                        className="avatar-uploader"
+                                        showUploadList={false}
+                                        beforeUpload={this._beforeUpload}>
+                                        {this.state.picturePreview ?
+                                            <img src={this.state.picturePreview} alt="avatar" style={{ width: '100%' }} /> :
+                                            <div>
+                                                <PlusOutlined />
+                                                <div style={{ marginTop: 8 }}>Upload</div>
+                                            </div>}
+                                    </Upload>
+                                </div>
+                                <p className="text-center">Display Pictrue</p>
                                 <Form.Item
                                     label="First name"
                                     name="firstName"

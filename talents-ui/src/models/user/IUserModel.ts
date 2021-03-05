@@ -11,4 +11,5 @@ export interface IUserModel {
     isLockOutEnabled: boolean,
     roles: Array<ICreateUpdateUserRoleItem>,
     isEmailVerified: boolean,
+    picture?: string
 }

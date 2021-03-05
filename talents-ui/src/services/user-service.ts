@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getFormData } from "../helpers/form-data-helper";
 import { LOCALSTORAGE } from "../models/constants";
 import { IResultModel } from "../models/IResultModel";
 import { ICreateUpdateUserModel } from "../models/user/ICreateUpdateUserModel";
@@ -7,8 +8,9 @@ import { IUserModel } from "../models/user/IUserModel";
 
 export default class UserService {
     static create = async (data: ICreateUpdateUserModel): Promise<IResultModel> => {
+        var formData = getFormData(data);
         return new Promise((resolve, reject) => {
-            axios.post(`${process.env.REACT_APP_API_ENDPOINT}/api/user`, data,
+            axios.post(`${process.env.REACT_APP_API_ENDPOINT}/api/user`, formData,
                 {
                     headers: {
                         "Authorization": `bearer ${localStorage.getItem(LOCALSTORAGE.TOKEN)}`
@@ -25,8 +27,9 @@ export default class UserService {
     }
 
     static update = async (data: ICreateUpdateUserModel): Promise<IResultModel> => {
+        var formData = getFormData(data);
         return new Promise((resolve, reject) => {
-            axios.put(`${process.env.REACT_APP_API_ENDPOINT}/api/user`, data,
+            axios.put(`${process.env.REACT_APP_API_ENDPOINT}/api/user`, formData,
                 {
                     headers: {
                         "Authorization": `bearer ${localStorage.getItem(LOCALSTORAGE.TOKEN)}`

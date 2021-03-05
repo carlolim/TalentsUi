@@ -1,6 +1,8 @@
-import { InfoCircleFilled, SaveFilled } from "@ant-design/icons";
-import { Alert, Button, Checkbox, Divider, Form, FormInstance, Input, message, Modal, Skeleton, Tooltip, Tree } from "antd";
+import { InfoCircleFilled, PlusOutlined, SaveFilled } from "@ant-design/icons";
+import { Alert, Button, Checkbox, Divider, Form, FormInstance, Input, message, Modal, Skeleton, Tooltip, Tree, Upload } from "antd";
+import { encode } from "punycode";
 import React, { Component } from "react";
+import { formatToImageUrl } from "../../helpers/utils";
 import { IAlertModel } from "../../models/IAlertModel";
 import { ICreateUpdateUserModel } from "../../models/user/ICreateUpdateUserModel";
 import { ICreateUpdateUserRoleItem } from "../../models/user/ICreateUpdateUserRoleItem";
@@ -20,7 +22,9 @@ interface IState {
     alert: IAlertModel,
     roles: Array<ICreateUpdateUserRoleItem>,
     setRandomPassword: boolean,
-    showSpinner: boolean
+    showSpinner: boolean,
+    picturePreview: string,
+    pictureFile?: File
 }
 
 export default class EditUserModal extends Component<IProps, IState>{
@@ -34,7 +38,9 @@ export default class EditUserModal extends Component<IProps, IState>{
             isSuccess: false
         },
         roles: [],
-        setRandomPassword: false
+        setRandomPassword: false,
+        picturePreview: '',
+        pictureFile: undefined
     }
 
     componentDidMount = async () => {
@@ -47,7 +53,7 @@ export default class EditUserModal extends Component<IProps, IState>{
             const result = await UserService.getById(this.props.id);
             this.setState({ showSpinner: false });
             if (result.isSuccess) {
-                this.setState({ roles: result.data.roles });
+                this.setState({ roles: result.data.roles, picturePreview: formatToImageUrl(result.data.picture) });
                 const roles: Array<number> = result.data.roles.map((r: ICreateUpdateUserRoleItem) => {
                     if (r.isChecked) return r.roleId;
                 });
@@ -70,10 +76,10 @@ export default class EditUserModal extends Component<IProps, IState>{
         try {
             var roles: Array<ICreateUpdateUserRoleItem> = [];
             if (values.roles) {
-                values.roles.forEach((r: number) => roles.push({ roleId: r, name: '', isChecked: true }));
+                values.roles.forEach((r: number) => roles.push({ roleId: r === undefined ? 0 : r, name: '', isChecked: true }));
             }
 
-            var data: ICreateUpdateUserModel = { ...values, roles };
+            var data: ICreateUpdateUserModel = { ...values, roles, uploadedPicture: this.state.pictureFile };
             data.id = this.props.id;
             const result = await UserService.update(data);
             if (result.isSuccess) {
@@ -92,7 +98,11 @@ export default class EditUserModal extends Component<IProps, IState>{
     }
 
     _toggleSetRandomPassword = (setRandomPassword: boolean) => this.setState({ setRandomPassword });
-
+    _removePicture = () => this.setState({ picturePreview: '', pictureFile: undefined });
+    _beforeUpload = (file: File) => {
+        this.setState({ picturePreview: URL.createObjectURL(file), pictureFile: file });
+        return false;
+    }
     render() {
         return (
             <>
@@ -131,6 +141,22 @@ export default class EditUserModal extends Component<IProps, IState>{
                                 onFinish={this._onFinish}>
                                 {this.state.alert.show && <Alert type={this.state.alert.isSuccess ? 'success' : 'error'} message={this.state.alert.message} />}
                                 <p></p>
+                                <div className="text-center">
+                                    <Upload
+                                        name="avatar"
+                                        listType="picture-card"
+                                        className="avatar-uploader"
+                                        showUploadList={false}
+                                        beforeUpload={this._beforeUpload}>
+                                        {this.state.picturePreview ?
+                                            <img src={this.state.picturePreview} alt="avatar" style={{ width: '100%' }} /> :
+                                            <div>
+                                                <PlusOutlined />
+                                                <div style={{ marginTop: 8 }}>Upload</div>
+                                            </div>}
+                                    </Upload>
+                                </div>
+                                <p className="text-center">Display Pictrue</p>
                                 <Form.Item
                                     label="First name"
                                     name="firstName"

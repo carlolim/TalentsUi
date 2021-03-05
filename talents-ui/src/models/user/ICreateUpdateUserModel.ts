@@ -13,5 +13,7 @@ export interface ICreateUpdateUserModel {
     sendActivationEmail: boolean,
     isLockOutEnabled: boolean,
     emailVerificationRequired: boolean,
-    roles: Array<ICreateUpdateUserRoleItem>
+    roles: Array<ICreateUpdateUserRoleItem>,
+    picture: string,
+    uploadedPicture?: File
 }
